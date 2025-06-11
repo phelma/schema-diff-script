@@ -422,21 +422,79 @@ function formatArrayChange(difference: any): string {
 async function main() {
   const args = process.argv.slice(2);
 
-  if (args.length !== 2) {
-    console.error(colorize.error("Usage: bun run index.ts <url1> <url2>"));
+  let url1: string;
+  let url2: string;
+
+  if (args.length === 2) {
+    // Original format: url1 url2
+    const [arg1, arg2] = args;
+    if (!arg1 || !arg2) {
+      console.error(colorize.error("Error: Both URLs must be provided"));
+      process.exit(1);
+    }
+    url1 = arg1;
+    url2 = arg2;
+  } else if (args.length === 3) {
+    // New format: host1 host2 path
+    const [arg1, arg2, arg3] = args;
+    if (!arg1 || !arg2 || !arg3) {
+      console.error(
+        colorize.error(
+          "Error: All three arguments (host1, host2, path) must be provided"
+        )
+      );
+      process.exit(1);
+    }
+
+    const [host1, host2, path] = [arg1, arg2, arg3];
+
+    // Ensure hosts have protocol
+    const normalizeHost = (host: string) => {
+      if (!host.startsWith("http://") && !host.startsWith("https://")) {
+        return `https://${host}`;
+      }
+      return host;
+    };
+
+    // Ensure path starts with /
+    const normalizePath = (path: string) => {
+      return path.startsWith("/") ? path : `/${path}`;
+    };
+
+    const normalizedHost1 = normalizeHost(host1);
+    const normalizedHost2 = normalizeHost(host2);
+    const normalizedPath = normalizePath(path);
+
+    url1 = `${normalizedHost1}${normalizedPath}`;
+    url2 = `${normalizedHost2}${normalizedPath}`;
+
+    console.log(colorize.info("🔗 Constructed URLs:"));
+    console.log(`   ${colorize.dim("URL 1:")} ${url1}`);
+    console.log(`   ${colorize.dim("URL 2:")} ${url2}`);
+    console.log("");
+  } else {
+    console.error(colorize.error("Usage:"));
+    console.error(
+      colorize.dim("  2 arguments: bun run index.ts <url1> <url2>")
+    );
+    console.error(
+      colorize.dim("  3 arguments: bun run index.ts <host1> <host2> <path>")
+    );
+    console.error("");
+    console.error(colorize.info("Examples:"));
     console.error(
       colorize.dim(
-        "Example: bun run index.ts https://example1.com https://example2.com"
+        "  bun run index.ts https://example1.com https://example2.com"
       )
     );
-    process.exit(1);
-  }
-
-  const [url1, url2] = args;
-
-  // Validate that both URLs are provided
-  if (!url1 || !url2) {
-    console.error(colorize.error("Error: Both URLs must be provided"));
+    console.error(
+      colorize.dim("  bun run index.ts example1.com example2.com /products/123")
+    );
+    console.error(
+      colorize.dim(
+        "  bun run index.ts https://staging.site.com https://prod.site.com /page"
+      )
+    );
     process.exit(1);
   }
 
